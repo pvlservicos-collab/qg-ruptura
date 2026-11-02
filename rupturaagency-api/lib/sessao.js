@@ -5,8 +5,8 @@ export const COOKIE = 'ruptura_sessao';
 const DURACAO = 60 * 60 * 24 * 60; // 60 dias
 
 function segredo() {
-  const s = process.env.SESSAO_SEGREDO;
-  if (!s || s.length < 32) throw new Error('Defina SESSAO_SEGREDO (mínimo 32 caracteres) nas variáveis de ambiente.');
+  const s = String(process.env.SESSAO_SEGREDO || '').trim();
+  if (s.length < 32) throw new Error('Falta SESSAO_SEGREDO (texto aleatório com 32 caracteres ou mais) nas variáveis de ambiente do servidor.');
   return s;
 }
 
@@ -18,8 +18,6 @@ function iguais(a, b) {
   const B = Buffer.from(String(b));
   return A.length === B.length && timingSafeEqual(A, B);
 }
-
-export const conferirSenha = senha => !!process.env.RUPTURA_SENHA && iguais(process.env.RUPTURA_SENHA, String(senha || ''));
 
 export function criarCookie() {
   const dados = b64(JSON.stringify({ u: 'qg', exp: Math.floor(Date.now() / 1000) + DURACAO }));

@@ -158,6 +158,15 @@ input,select,textarea{background:#fff;color:var(--ink);border:1px solid var(--li
 .manual[open] summary{margin-bottom:8px}
 .modal .sub{margin:-4px 0 0;font-size:13px;color:var(--ink2);line-height:1.45}
 .modal .erro{margin:0;font-size:12.5px;color:#b3261e}
+.modal .ok{margin:0;font-size:12.5px;color:#1fae7a}
+.opcoes{display:flex;flex-direction:column;gap:6px}
+.opcao{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px 13px;border:1px solid var(--line);border-radius:11px;background:var(--panel);color:var(--ink);font:inherit;font-size:14px;cursor:pointer}
+.opcao:hover{background:#1e2028}
+.opcao:focus-visible{outline:2px solid var(--signal);outline-offset:1px}
+.opcao span{display:flex;flex-direction:column;gap:2px;min-width:0}
+.opcao small{color:var(--ink2);font-size:12px;line-height:1.4}
+.novo{margin-left:auto;flex:none;font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;padding:2px 7px;border-radius:6px;background:rgba(255,68,35,.16);color:#ff7a5c}
+#config{min-width:40px}
 
 .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 100px);transform:translateX(-50%);background:var(--ink);color:#f3f6f2;padding:10px 15px;border-radius:11px;font-size:13px;z-index:12}
 .dica{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(env(safe-area-inset-bottom,0px) + 26px);font-size:11.5px;color:rgba(243,246,242,.55);z-index:2;font-family:var(--mono)}
@@ -251,6 +260,7 @@ input,select,textarea{background:#fff;color:var(--ink);border:1px solid var(--li
     <button class="btn" id="tour" aria-pressed="false">▶ Tour</button>
     <button class="btn" id="estrat">Estratégia</button>
     <button class="btn" id="geral">Visão do andar</button>
+    <button class="btn" id="config" title="Configurações" aria-label="Configurações">⚙</button>
     <button class="btn prim" id="nova">Nova pauta</button>
   </div>
 </header>
@@ -303,6 +313,30 @@ input,select,textarea{background:#fff;color:var(--ink);border:1px solid var(--li
     <label for="f-senha">Senha<input id="f-senha" type="password" autocomplete="current-password" required></label>
     <p class="erro" id="l-erro" role="alert" hidden></p>
     <div class="bts"><button type="button" class="btn" id="l-depois">Agora não</button><button class="btn prim" id="l-entrar">Entrar</button></div>
+  </form>
+</div>
+
+<div class="modal" id="modal-config" hidden>
+  <form id="form-config" class="vidro">
+    <h2>Configurações</h2>
+    <div class="opcoes">
+      <button type="button" class="opcao" id="c-perfil"><span>Perfil<small>Trocar o @ e o nicho</small></span></button>
+      <button type="button" class="opcao" id="c-senha"><span>Mudar senha<small>Trocar a senha de entrada do QG</small></span><i class="novo">(novo)</i></button>
+      <button type="button" class="opcao" id="c-sair"><span>Sair<small>Desconectar este navegador</small></span></button>
+    </div>
+    <div class="bts"><button type="button" class="btn" id="c-fechar">Fechar</button></div>
+  </form>
+</div>
+
+<div class="modal" id="modal-senha" hidden>
+  <form id="form-senha" class="vidro">
+    <h2>Mudar senha</h2>
+    <p class="sub">A senha nova passa a valer para todo mundo que entra no QG.</p>
+    <label for="s-atual">Senha atual<input id="s-atual" type="password" autocomplete="current-password" required></label>
+    <label for="s-nova">Senha nova<input id="s-nova" type="password" autocomplete="new-password" minlength="6" required></label>
+    <label for="s-conf">Repita a senha nova<input id="s-conf" type="password" autocomplete="new-password" minlength="6" required></label>
+    <p class="erro" id="s-erro" role="alert" hidden></p>
+    <div class="bts"><button type="button" class="btn" id="s-cancelar">Cancelar</button><button class="btn prim" id="s-salvar">Salvar senha</button></div>
   </form>
 </div>
 
@@ -1217,7 +1251,7 @@ function abrir(id){ if(tourAtual) pararTour(); aberta = id; if(id==='estrategia'
 function fechar(){ aberta = null; $('gaveta').classList.add('fechada'); render(); }
 $('g-fechar').addEventListener('click', ()=>{ fechar(); irPara(GERAL); });
 $('geral').addEventListener('click', ()=>{ fechar(); irPara(GERAL); });
-addEventListener('keydown', e=>{ if(e.key!=='Escape') return; if(!$('prompter').hidden) $('prompter').hidden = true; else if(!$('modal').hidden) $('modal').hidden = true; else if(!$('modal-arroba').hidden) $('modal-arroba').hidden = true; else if(!$('modal-login').hidden) $('l-depois').click(); else { fechar(); irPara(GERAL); } });
+addEventListener('keydown', e=>{ if(e.key!=='Escape') return; if(!$('prompter').hidden) $('prompter').hidden = true; else if(!$('modal').hidden) $('modal').hidden = true; else if(!$('modal-arroba').hidden) $('modal-arroba').hidden = true; else if(!$('modal-senha').hidden) $('modal-senha').hidden = true; else if(!$('modal-config').hidden) $('modal-config').hidden = true; else if(!$('modal-login').hidden) $('l-depois').click(); else { fechar(); irPara(GERAL); } });
 
 const esc = s => String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fmtN = n => (n||0).toLocaleString('pt-BR');
@@ -1501,6 +1535,34 @@ $('form-login').addEventListener('submit', async e=>{
     if(r.ok){ $('modal-login').hidden = true; await nuvemPuxar(true); }
     else { const j = await r.json().catch(()=>({})); $('l-erro').textContent = j.erro || 'Não deu para entrar. Tente de novo.'; $('l-erro').hidden = false; }
   }catch(err){ $('l-erro').textContent = 'Sem conexão. Tente de novo.'; $('l-erro').hidden = false; }
+  bt.disabled = false;
+});
+$('config').addEventListener('click', ()=>{ $('modal-config').hidden = false; setTimeout(()=>$('c-senha').focus(),30); });
+$('c-fechar').addEventListener('click', ()=>$('modal-config').hidden = true);
+$('modal-config').addEventListener('click', e=>{ if(e.target===$('modal-config')) $('modal-config').hidden = true; });
+$('c-perfil').addEventListener('click', ()=>{ $('modal-config').hidden = true; $('arroba').click(); });
+$('c-senha').addEventListener('click', ()=>{ $('modal-config').hidden = true; $('form-senha').reset(); $('s-erro').hidden = true; $('modal-senha').hidden = false; setTimeout(()=>$('s-atual').focus(),30); });
+$('c-sair').addEventListener('click', async ()=>{
+  $('modal-config').hidden = true;
+  try{ await fetch('/api/login', {method:'DELETE', credentials:'same-origin'}); }catch(e){}
+  nuvem.on = false; try{ sessionStorage.removeItem('agencia-login-depois'); }catch(e){}
+  toast('Você saiu do QG'); pedirLogin();
+});
+$('s-cancelar').addEventListener('click', ()=>$('modal-senha').hidden = true);
+$('form-senha').addEventListener('submit', async e=>{
+  e.preventDefault(); const erro = t=>{ $('s-erro').textContent = t; $('s-erro').hidden = false; };
+  $('s-erro').hidden = true;
+  const atual = $('s-atual').value, nova = $('s-nova').value.trim();
+  if(nova.length < 6) return erro('A senha nova precisa ter pelo menos 6 caracteres.');
+  if(nova !== $('s-conf').value.trim()) return erro('As duas senhas novas não são iguais.');
+  const bt = $('s-salvar'); bt.disabled = true;
+  try{
+    const r = await fetch('/api/login', {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({atual, nova}), credentials:'same-origin'});
+    const j = await r.json().catch(()=>({}));
+    if(r.ok){ $('modal-senha').hidden = true; toast('Senha alterada'); }
+    else if(r.status===401 && j.logado===false){ $('modal-senha').hidden = true; try{ sessionStorage.removeItem('agencia-login-depois'); }catch(e){} pedirLogin(); toast('Entre de novo para mudar a senha'); }
+    else erro(j.erro || 'Não deu para mudar a senha. Tente de novo.');
+  }catch(err){ erro('Sem conexão. Tente de novo.'); }
   bt.disabled = false;
 });
 $('l-depois').addEventListener('click', ()=>{ try{ sessionStorage.setItem('agencia-login-depois','1'); }catch(e){} $('modal-login').hidden = true; toast('As pautas ficam só neste navegador'); });

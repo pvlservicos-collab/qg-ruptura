@@ -71,4 +71,15 @@ if (process.env.TESTE_VERCEL) {
   ok((await fetch(U + '/api/semanal', { headers: { authorization: 'Bearer cron-teste' } })).status === 200, 'cron dispara a pesquisa');
   ok((await fetch(U + '/api/agente-background', { method: 'POST', body: '{"acao":"semana"}' })).status === 401, 'agente em segundo plano pede token');
 }
+// Mudar senha: pede login e a senha atual; depois só a nova vale.
+const entrar = s => fetch(U + '/api/login', { method: 'POST', body: JSON.stringify({ senha: s }) }).then(x => x.status);
+const trocar = (corpo, c = cookie) => fetch(U + '/api/login', { method: 'PUT', headers: c ? { cookie: c } : {}, body: JSON.stringify(corpo) });
+ok((await trocar({ atual: 'teste-local', nova: 'nova-senha-1' }, null)).status === 401, 'mudar senha pede login');
+ok((await trocar({ atual: 'errada', nova: 'nova-senha-1' })).status === 401, 'mudar senha confere a atual');
+ok((await trocar({ atual: 'teste-local', nova: '123' })).status === 400, 'senha nova curta é recusada');
+const tr = await trocar({ atual: 'teste-local', nova: 'nova-senha-1' });
+ok(tr.status === 200 && /ruptura_sessao=/.test(tr.headers.get('set-cookie') || ''), 'muda a senha e renova o cookie');
+ok(await entrar('teste-local') === 401, 'senha antiga deixa de valer');
+ok(await entrar('nova-senha-1') === 200, 'senha nova entra');
+ok((await trocar({ atual: 'nova-senha-1', nova: 'teste-local' })).status === 200, 'volta a senha de teste');
 process.exit(process.exitCode || 0);
