@@ -1,0 +1,5 @@
+node_modules/
+.netlify/
+.vercel/
+LOGIN.txt
+.env*
